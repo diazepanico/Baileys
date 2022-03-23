@@ -77,11 +77,15 @@ export type MediaType = 'image' | 'video' | 'sticker' | 'audio' | 'document' | '
 export type AnyMediaMessageContent = (
     ({
         image: WAMediaUpload
+        width?: number
+	    height?: number
         caption?: string
         jpegThumbnail?: string
     } & Mentionable & Buttonable & Templatable & WithDimensions)
     | ({
         video: WAMediaUpload
+        width?: number
+	    height?: number
         caption?: string
         gifPlayback?: boolean
         jpegThumbnail?: string

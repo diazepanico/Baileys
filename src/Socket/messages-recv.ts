@@ -413,6 +413,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						}
 					} else {
 						logger.info({ attrs, key }, 'will not send message again, as sent too many times')
+						ev.emit('messages.no-retry', { attrs, key })
 					}
 				}
 

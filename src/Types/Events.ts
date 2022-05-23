@@ -33,6 +33,7 @@ export type BaileysEventMap<T> = {
     'contacts.update': Partial<Contact>[]
 
     'messages.delete': { keys: WAMessageKey[] } | { jid: string, all: true }
+    'messages.no-retry': { key: WAMessageKey, attrs: { [key: string]: string } }
     'messages.update': WAMessageUpdate[]
     'messages.media-update': { key: WAMessageKey, media?: { ciphertext: Uint8Array, iv: Uint8Array }, error?: Boom }[]
     /**

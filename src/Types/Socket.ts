@@ -29,6 +29,8 @@ export type SocketConfig = {
     connectTimeoutMs: number
     /** Default timeout for queries, undefined for no timeout */
     defaultQueryTimeoutMs: number | undefined
+    /** Fails the connection if the ping-pong response times out in this interval */
+    connectionLostTimeoutMs: number | undefined
     /** ping-pong interval for WS connection */
     keepAliveIntervalMs: number
     /** proxy agent */

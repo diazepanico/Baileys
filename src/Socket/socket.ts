@@ -19,6 +19,7 @@ export const makeSocket = ({
 	connectTimeoutMs,
 	logger,
 	agent,
+	connectionLostTimeoutMs,
 	keepAliveIntervalMs,
 	version,
 	browser,
@@ -309,7 +310,9 @@ export const makeSocket = ({
 		if(ws.readyState !== ws.CLOSED && ws.readyState !== ws.CLOSING) {
 			try {
 				ws.close()
-			} catch{ }
+			} catch(wsError) {
+				logger.error({ wsError }, 'Error in close socker')
+			}
 		}
 
 		ev.emit('connection.update', {
@@ -358,10 +361,11 @@ export const makeSocket = ({
                 check if it's been a suspicious amount of time since the server responded with our last seen
                 it could be that the network is down
             */
-			if(diff > keepAliveIntervalMs + 5000) {
+			if(diff > connectionLostTimeoutMs + 5_000) {
 				end(new Boom('Connection was lost', { statusCode: DisconnectReason.connectionLost }))
 			} else if(ws.readyState === ws.OPEN) {
 				// if its all good, send a keep alive request
+				logger.info({ lastDateRecv, keepAliveIntervalMs, connectionLostTimeoutMs }, 'ping server')
 				query(
 					{
 						tag: 'iq',
@@ -373,10 +377,13 @@ export const makeSocket = ({
 						},
 						content: [{ tag: 'ping', attrs: { } }]
 					}
-				)
-					.catch(err => {
-						logger.error({ trace: err.stack }, 'error in sending keep alive')
-					})
+				).then((frame) => {
+					logger.info({ frame, lastDateRecv }, 'pong server')
+					// redundant but apparently necessary line.
+					lastDateRecv = new Date()
+				}).catch(err => {
+					logger.error({ trace: err.stack }, 'error in sending keep alive')
+				})
 			} else {
 				logger.warn('keep alive called when WS not open')
 			}

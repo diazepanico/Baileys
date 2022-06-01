@@ -85,7 +85,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	}
 
 	const sendRetryRequest = async(node: BinaryNode) => {
-		const msgId = node.attrs.id
+		const msgId = [node.attrs.id, node.attrs.participant].filter((i) => i).join('_')
 		const retryCount = msgRetryMap[msgId] || 1
 		if(retryCount >= 5) {
 			logger.debug({ retryCount, msgId }, 'reached retry limit, clearing')
@@ -304,9 +304,17 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		}
 	}
 
-	const willSendMessageAgain = (id: string) => {
-		const retryCount = msgRetryMap[id] || 0
-		return retryCount < 5
+	const registerSendMessageAgainAttempt = (key: proto.IMessageKey) => {
+		const keyId = [key.id, key.participant].filter((i) => i).join('_')
+
+		msgRetryMap[keyId] = (msgRetryMap[keyId] || 0) + 1
+	}
+
+	const willSendMessageAgain = (key: proto.IMessageKey) => {
+		const keyId = [key.id, key.participant].filter((i) => i).join('_')
+		const retryCount = msgRetryMap[keyId] || 0
+		logger.debug({ msgRetryMap }, 'map retry')
+		return retryCount < 2
 	}
 
 	const sendMessagesAgain = async(key: proto.IMessageKey, ids: string[]) => {
@@ -327,7 +335,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 		for(let i = 0; i < msgs.length;i++) {
 			if(msgs[i]) {
-				msgRetryMap[ids[i]] = (msgRetryMap[ids[i]] || 0) + 1
+				registerSendMessageAgainAttempt({ ...key, id: ids[i] })
 				await relayMessage(key.remoteJid, msgs[i], {
 					messageId: ids[i],
 					participant
@@ -397,9 +405,12 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				}
 
 				if(attrs.type === 'retry') {
-					if(willSendMessageAgain(ids[0])) {
-						// correctly set who is asking for the retry
-						key.participant = key.participant || attrs.from
+
+					key.participant = key.participant || attrs.from
+
+					// correctly set who is asking for the retry
+					if(willSendMessageAgain({ ...key, id: ids[0] })) {
+
 						if(key.fromMe) {
 							try {
 								logger.debug({ attrs, key }, 'recv retry request')

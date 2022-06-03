@@ -2,8 +2,9 @@ import { Boom } from '@hapi/boom'
 import { promisify } from 'util'
 import WebSocket from 'ws'
 import { proto } from '../../WAProto'
+import WaCache from '../Utils/cache'
 import { DEF_CALLBACK_PREFIX, DEF_TAG_PREFIX, DEFAULT_ORIGIN, INITIAL_PREKEY_COUNT, MIN_PREKEY_COUNT } from '../Defaults'
-import { DisconnectReason, SocketConfig } from '../Types'
+import { DisconnectReason, SocketConfig, GroupMetadataParticipants } from '../Types'
 import { addTransactionCapability, bindWaitForConnectionUpdate, configureSuccessfulPairing, Curve, generateLoginNode, generateMdTagPrefix, generateRegistrationNode, getCodeFromWSError, getErrorCodeFromStreamError, getNextPreKeysNode, makeNoiseHandler, printQRIfNecessaryListener, promiseTimeout } from '../Utils'
 import { makeEventBuffer } from '../Utils/event-buffer'
 import { assertNodeErrorFree, BinaryNode, encodeBinaryNode, getBinaryNodeChild, getBinaryNodeChildren, S_WHATSAPP_NET } from '../WABinary'
@@ -44,6 +45,9 @@ export const makeSocket = ({
 	const { creds } = authState
 	// add transaction capability
 	const keys = addTransactionCapability(authState.keys, logger, transactionOpts)
+
+	const cacheGroupMetadata = new WaCache<GroupMetadataParticipants>(120_000, {logger} as SocketConfig);
+	ev.on('group-participants.update', (msg) => cacheGroupMetadata.removeCache(msg.id))
 
 	let lastDateRecv: Date
 	let epoch = 1
@@ -295,6 +299,7 @@ export const makeSocket = ({
 
 		clearInterval(keepAliveReq)
 		clearTimeout(qrTimer)
+		cacheGroupMetadata.stop()
 
 		ws.removeAllListeners('close')
 		ws.removeAllListeners('error')
@@ -355,7 +360,7 @@ export const makeSocket = ({
                 check if it's been a suspicious amount of time since the server responded with our last seen
                 it could be that the network is down
             */
-			if(diff > connectionLostTimeoutMs + 5_000) {
+			if(diff > (connectionLostTimeoutMs || keepAliveIntervalMs) + 5_000) {
 				end(new Boom('Connection was lost', { statusCode: DisconnectReason.connectionLost }))
 			} else if(ws.readyState === ws.OPEN) {
 				// if its all good, send a keep alive request
@@ -573,6 +578,7 @@ export const makeSocket = ({
 		uploadPreKeys,
 		/** Waits for the connection to WA to reach a state */
 		waitForConnectionUpdate: bindWaitForConnectionUpdate(ev),
+		cacheGroupMetadata,
 	}
 }
 

@@ -29,7 +29,8 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		generateMessageTag,
 		sendNode,
 		groupMetadata,
-		groupToggleEphemeral
+		groupToggleEphemeral,
+		cacheGroupMetadata,
 	} = sock
 
 	const userDevicesCache = config.userDevicesCache || new NodeCache({
@@ -341,13 +342,14 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				if(isGroup) {
 					const [groupData, senderKeyMap] = await Promise.all([
 						(async() => {
-							let groupData = cachedGroupMetadata ? await cachedGroupMetadata(jid) : undefined
+							let groupData = cachedGroupMetadata ? await cachedGroupMetadata(jid) : cacheGroupMetadata.getCache(jid)
 							if(groupData) {
 								logger.trace({ jid, participants: groupData.participants.length }, 'using cached group metadata')
 							}
 
 							if(!groupData) {
 								groupData = await groupMetadata(jid)
+								cacheGroupMetadata.putCache(jid, groupData)
 							}
 
 							return groupData

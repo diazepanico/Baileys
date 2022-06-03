@@ -3,10 +3,10 @@ import EventEmitter from 'events'
 import { promisify } from 'util'
 import WebSocket from 'ws'
 import { proto } from '../../WAProto'
-import WaCache from '../Utils/cache'
 import { DEF_CALLBACK_PREFIX, DEF_TAG_PREFIX, DEFAULT_ORIGIN, INITIAL_PREKEY_COUNT, MIN_PREKEY_COUNT } from '../Defaults'
 import { AuthenticationCreds, BaileysEventEmitter, BaileysEventMap, DisconnectReason, GroupMetadataParticipants, SocketConfig } from '../Types'
 import { addTransactionCapability, bindWaitForConnectionUpdate, configureSuccessfulPairing, Curve, generateLoginNode, generateMdTagPrefix, generateRegistrationNode, getErrorCodeFromStreamError, getNextPreKeysNode, makeNoiseHandler, printQRIfNecessaryListener, promiseTimeout } from '../Utils'
+import WaCache from '../Utils/cache'
 import { assertNodeErrorFree, BinaryNode, encodeBinaryNode, getBinaryNodeChild, getBinaryNodeChildren, S_WHATSAPP_NET } from '../WABinary'
 
 /**
@@ -46,7 +46,7 @@ export const makeSocket = ({
 	// add transaction capability
 	const keys = addTransactionCapability(authState.keys, logger, transactionOpts)
 
-	const cacheGroupMetadata = new WaCache<GroupMetadataParticipants>(120_000, {logger} as SocketConfig);
+	const cacheGroupMetadata = new WaCache<GroupMetadataParticipants>(120_000, { logger } as SocketConfig)
 	ev.on('group-participants.update', (msg) => cacheGroupMetadata.removeCache(msg.id))
 
 	let lastDateRecv: Date

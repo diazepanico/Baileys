@@ -3,8 +3,9 @@ import EventEmitter from 'events'
 import { promisify } from 'util'
 import WebSocket from 'ws'
 import { proto } from '../../WAProto'
+import WaCache from '../Utils/cache'
 import { DEF_CALLBACK_PREFIX, DEF_TAG_PREFIX, DEFAULT_ORIGIN, INITIAL_PREKEY_COUNT, MIN_PREKEY_COUNT } from '../Defaults'
-import { AuthenticationCreds, BaileysEventEmitter, BaileysEventMap, DisconnectReason, SocketConfig } from '../Types'
+import { AuthenticationCreds, BaileysEventEmitter, BaileysEventMap, DisconnectReason, GroupMetadataParticipants, SocketConfig } from '../Types'
 import { addTransactionCapability, bindWaitForConnectionUpdate, configureSuccessfulPairing, Curve, generateLoginNode, generateMdTagPrefix, generateRegistrationNode, getCodeFromWSError, getErrorCodeFromStreamError, getNextPreKeysNode, makeNoiseHandler, printQRIfNecessaryListener, promiseTimeout } from '../Utils'
 import { assertNodeErrorFree, BinaryNode, encodeBinaryNode, getBinaryNodeChild, getBinaryNodeChildren, S_WHATSAPP_NET } from '../WABinary'
 
@@ -43,6 +44,9 @@ export const makeSocket = ({
 	const { creds } = authState
 	// add transaction capability
 	const keys = addTransactionCapability(authState.keys, logger, transactionOpts)
+
+	const cacheGroupMetadata = new WaCache<GroupMetadataParticipants>(120_000, {logger} as SocketConfig);
+	ev.on('group-participants.update', (msg) => cacheGroupMetadata.removeCache(msg.id))
 
 	let lastDateRecv: Date
 	let epoch = 1
@@ -287,6 +291,7 @@ export const makeSocket = ({
 
 		clearInterval(keepAliveReq)
 		clearTimeout(qrTimer)
+		cacheGroupMetadata.stop()
 
 		ws.removeAllListeners('close')
 		ws.removeAllListeners('error')
@@ -572,7 +577,8 @@ export const makeSocket = ({
 		onUnexpectedError,
 		uploadPreKeys,
 		/** Waits for the connection to WA to reach a state */
-		waitForConnectionUpdate: bindWaitForConnectionUpdate(ev)
+		waitForConnectionUpdate: bindWaitForConnectionUpdate(ev),
+		cacheGroupMetadata,
 	}
 }
 

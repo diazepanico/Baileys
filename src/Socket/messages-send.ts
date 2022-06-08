@@ -210,6 +210,20 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		return deviceResults
 	}
 
+	const getUSyncDevicesInBatch = async(jids: string[], ignoreZeroDevices: boolean, chunkSize: number): Promise<JidWithDevice[]> => {
+
+		jids = Array.from(new Set(jids))
+		const chunks = []
+
+		for(let i = 0; i < jids.length; i += chunkSize) {
+			chunks.push(jids.slice(i, i + chunkSize))
+		}
+
+		const deviceResults = await Promise.all(chunks.map((c) => getUSyncDevices(c, ignoreZeroDevices)))
+
+		return deviceResults.reduce((a, b) => a.concat(b), [])
+	}
+
 	const assertSessions = async(jids: string[], force: boolean) => {
 		let jidsRequiringFetch: string[] = []
 		if(force) {
@@ -284,6 +298,60 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		return nodes
 	}
 
+	const createParticipantNodesInBatch = async(jids: string[], bytes: Buffer, chunkSize: number): Promise<BinaryNode[]> => {
+
+		const chunks = []
+
+		for(let i = 0; i < jids.length; i += chunkSize) {
+			chunks.push(jids.slice(i, i + chunkSize))
+		}
+
+		const binaryResults = await Promise.all(chunks.map((c) => createParticipantNodes(c, bytes)))
+
+		return binaryResults.reduce((a, b) => a.concat(b), [])
+	}
+
+	const createChunkStanza = (stanza: BinaryNode, participantsNode: BinaryNode[], chunkSize: number): BinaryNode[] => {
+
+		const participantsChunks = []
+		const binaryNodeContent = (stanza.content || []) as BinaryNode[]
+
+		for(let i = 0; i < participantsNode.length; i += chunkSize) {
+			participantsChunks.push(participantsNode.slice(i, i + chunkSize))
+		}
+
+		return participantsChunks.map((participants) => {
+			const stanzaChunk = {} as BinaryNode
+
+			stanzaChunk.attrs = stanza.attrs
+			stanzaChunk.tag = stanza.tag
+			stanzaChunk.content = [...binaryNodeContent];
+
+			((stanzaChunk.content) as BinaryNode[]).push({
+				tag: 'participants',
+				attrs: {},
+				content: participants
+			})
+
+			const shouldHaveIdentity = !!participants.find(
+				participant => (participant.content! as BinaryNode[]).find(n => n.attrs.type === 'pkmsg')
+			)
+
+			if(shouldHaveIdentity) {
+				(stanzaChunk.content as BinaryNode[]).push({
+					tag: 'device-identity',
+					attrs: { },
+					content: proto.ADVSignedDeviceIdentity.encode(authState.creds.account).finish()
+				})
+
+				logger.debug({ attrs: stanzaChunk.attrs }, 'adding device identity')
+			}
+
+			return stanzaChunk
+		}) as BinaryNode[]
+
+	}
+
 	const relayMessage = async(
 		jid: string,
 		message: proto.IMessage,
@@ -334,7 +402,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 					if(!participant) {
 						const participantsList = groupData.participants.map(p => p.id)
-						const additionalDevices = await getUSyncDevices(participantsList, false)
+						const additionalDevices = await getUSyncDevicesInBatch(participantsList, false, 100)
 						devices.push(...additionalDevices)
 					}
 
@@ -362,7 +430,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						})
 
 						participants.push(
-							...(await createParticipantNodes(senderKeyJids, encSenderKeyMsg))
+							...(await createParticipantNodesInBatch(senderKeyJids, encSenderKeyMsg, 100))
 						)
 					}
 
@@ -411,14 +479,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					participants.push(...otherNodes)
 				}
 
-				if(participants.length) {
-					binaryNodeContent.push({
-						tag: 'participants',
-						attrs: { },
-						content: participants
-					})
-				}
-
 				const stanza: BinaryNode = {
 					tag: 'message',
 					attrs: {
@@ -430,23 +490,15 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					content: binaryNodeContent
 				}
 
-				const shouldHaveIdentity = !!participants.find(
-					participant => (participant.content! as BinaryNode[]).find(n => n.attrs.type === 'pkmsg')
-				)
-
-				if(shouldHaveIdentity) {
-					(stanza.content as BinaryNode[]).push({
-						tag: 'device-identity',
-						attrs: { },
-						content: proto.ADVSignedDeviceIdentity.encode(authState.creds.account).finish()
-					})
-
-					logger.debug({ jid }, 'adding device identity')
-				}
-
 				logger.debug({ msgId }, `sending message to ${participants.length} devices`)
 
-				await sendNode(stanza)
+				if(participants.length) {
+					const stanzas = createChunkStanza(stanza, participants, 160)
+					await Promise.all(stanzas.map((s) => sendNode(s)))
+				} else {
+					await sendNode(stanza)
+				}
+
 			}
 		)
 

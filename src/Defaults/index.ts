@@ -62,6 +62,7 @@ export const DEFAULT_CONNECTION_CONFIG: SocketConfig = {
 		patch: false,
 		snapshot: false,
 	},
+	sendMessagesAgainDelayMs: 250,
 	getMessage: async() => undefined
 }
 

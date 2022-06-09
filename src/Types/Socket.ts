@@ -39,4 +39,6 @@ export type CommonSocketConfig = {
     customUploadHosts: MediaConnInfo['hosts']
     /** time to wait between sending new retry requests */
     retryRequestDelayMs: number
+    /** time to wait between send messages again requests */
+    sendMessagesAgainDelayMs: number
 }

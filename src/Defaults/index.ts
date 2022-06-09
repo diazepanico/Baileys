@@ -39,7 +39,8 @@ const BASE_CONNECTION_CONFIG: CommonSocketConfig<any> = {
 	defaultQueryTimeoutMs: 60_000,
 	customUploadHosts: [],
 	treatCiphertextMessagesAsReal: false,
-	retryRequestDelayMs: 250
+	retryRequestDelayMs: 250,
+	sendMessagesAgainDelayMs: 250,
 }
 
 export const DEFAULT_CONNECTION_CONFIG: SocketConfig = {

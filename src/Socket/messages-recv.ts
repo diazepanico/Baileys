@@ -15,6 +15,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		treatCiphertextMessagesAsReal,
 		retryRequestDelayMs,
 		downloadHistory,
+		sendMessagesAgainDelayMs,
 		getMessage
 	} = config
 	const sock = makeChatsSocket(config)
@@ -369,8 +370,10 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			participant: attrs.participant
 		}
 
-		await processingMutex.mutex(
-			remoteJid,
+		const keyMutex = attrs.type === 'retry' ? 'retry-msg' : remoteJid
+
+		processingMutex.mutex(
+			keyMutex,
 			async() => {
 				const status = getStatusFromReceiptType(attrs.type)
 				if(
@@ -417,6 +420,9 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 							try {
 								logger.debug({ attrs, key }, 'recv retry request')
 								await sendMessagesAgain(key, ids)
+								if (sendMessagesAgainDelayMs) {
+									await delay(sendMessagesAgainDelayMs)
+								}
 							} catch(error) {
 								logger.error({ key, ids, trace: error.stack }, 'error in sending message again')
 							}

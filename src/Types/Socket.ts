@@ -43,4 +43,6 @@ export type CommonSocketConfig<T> = {
     treatCiphertextMessagesAsReal: boolean
     /** time to wait between sending new retry requests */
     retryRequestDelayMs: number
+    /** time to wait between send messages again requests */
+    sendMessagesAgainDelayMs: number
 }

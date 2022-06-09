@@ -39,6 +39,7 @@ const BASE_CONNECTION_CONFIG: CommonSocketConfig = {
 	emitOwnEvents: true,
 	defaultQueryTimeoutMs: 60_000,
 	customUploadHosts: [],
+	sendMessagesAgainDelayMs: 250,
 	retryRequestDelayMs: 250
 }
 

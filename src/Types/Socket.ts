@@ -41,4 +41,6 @@ export type CommonSocketConfig = {
     retryRequestDelayMs: number
     /** time to wait for the generation of the next QR in ms */
     qrTimeout?: number;
+    /** time to wait between send messages again requests */
+    sendMessagesAgainDelayMs: number
 }

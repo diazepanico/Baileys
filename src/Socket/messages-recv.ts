@@ -85,7 +85,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	}
 
 	const sendRetryRequest = async(node: BinaryNode) => {
-		const msgId = [node.attrs.id, node.attrs.participant].filter((i) => i).join('_')
+		const msgId = node.attrs.id
 		const retryCount = msgRetryMap[msgId] || 1
 		if(retryCount >= 5) {
 			logger.debug({ retryCount, msgId }, 'reached retry limit, clearing')
@@ -338,7 +338,10 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				registerSendMessageAgainAttempt({ ...key, id: ids[i] })
 				await relayMessage(key.remoteJid, msgs[i], {
 					messageId: ids[i],
-					participant
+					participant,
+					additionalAttributes: {
+						participant: participant
+					}
 				})
 			} else {
 				logger.debug({ jid: key.remoteJid, id: ids[i] }, 'recv retry request, but message not available')

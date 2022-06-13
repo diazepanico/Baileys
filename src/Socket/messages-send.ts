@@ -410,7 +410,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					// ensure a connection is established with every device
 					for(const { user, device } of devices) {
 						const jid = jidEncode(user, 's.whatsapp.net', device)
-						if(!senderKeyMap[jid]) {
+						if(!senderKeyMap[jid] || participant) {
 							senderKeyJids.push(jid)
 							// store that this person has had the sender keys sent to them
 							senderKeyMap[jid] = true

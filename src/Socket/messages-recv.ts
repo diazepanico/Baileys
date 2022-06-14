@@ -371,7 +371,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			participant: attrs.participant
 		}
 
-		const keyMutex = attrs.type === 'retry' ? `${remoteJid}-retry` : remoteJid
+		const keyMutex = attrs.type === 'retry' ? 'retry-msg' : remoteJid
 
 		processingMutex.mutex(
 			keyMutex,

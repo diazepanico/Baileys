@@ -225,6 +225,24 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		return deviceResults.reduce((a, b) => a.concat(b), [])
 	}
 
+	const removeDevicesNonexistent = async (jids: string[]) => {
+
+		if (jids.length == 0) {
+			return jids
+		}
+
+		const devices = await getUSyncDevicesInBatch(jids, false, 100)
+
+		return jids.filter((jid) => {
+			const jidDecoded  = jidDecode(jid)
+			const device: JidWithDevice = {
+				user: jidDecoded.user,
+				device: jidDecoded.device || 0
+			}
+			return devices.find((d) => d.user == device.user && d.device == device.device) != undefined
+		})
+	}
+
 	const assertSessions = async(jids: string[], force: boolean) => {
 		let jidsRequiringFetch: string[] = []
 		if(force) {
@@ -241,6 +259,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		}
 
 		if(jidsRequiringFetch.length) {
+			jidsRequiringFetch = await removeDevicesNonexistent(jidsRequiringFetch)
 			logger.debug({ jidsRequiringFetch }, 'fetching sessions')
 			const result = await query({
 				tag: 'iq',
@@ -514,6 +533,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	return {
 		...sock,
 		assertSessions,
+		removeDevicesNonexistent,
 		relayMessage,
 		sendReceipt,
 		sendReadReceipt,

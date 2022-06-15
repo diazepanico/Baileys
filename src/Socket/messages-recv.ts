@@ -23,6 +23,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		authState,
 		ws,
 		onUnexpectedError,
+		removeDevicesNonexistent,
 		assertSessions,
 		sendNode,
 		relayMessage,
@@ -324,8 +325,14 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				config.getMessage({ ...key, id })
 			))
 		)
+		
+		const [ participant ] = await removeDevicesNonexistent([key.participant || key.remoteJid])
 
-		const participant = key.participant || key.remoteJid
+		if (!participant) {
+			logger.debug({ jid: key.remoteJid, ids, participant }, 'recv retry request, but device not available')
+			return
+		}
+
 		await assertSessions([participant], true)
 
 		if(isJidGroup(key.remoteJid)) {

@@ -358,8 +358,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	}
 
 	const handleReceipt = async(node: BinaryNode) => {
-		let shouldAck = true
-
 		const { attrs, content } = node
 		const isNodeFromMe = areJidsSameUser(attrs.participant || attrs.from, authState.creds.me?.id)
 		const remoteJid = !isNodeFromMe || isJidGroup(attrs.from) ? attrs.from : attrs.recipient
@@ -414,8 +412,9 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 							}))
 						)
 					}
-
 				}
+
+				await sendMessageAck(node)
 
 				if(attrs.type === 'retry') {
 
@@ -433,7 +432,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 								}
 							} catch(error) {
 								logger.error({ key, ids, trace: error.stack }, 'error in sending message again')
-								shouldAck = false
 							}
 						} else {
 							logger.info({ attrs, key }, 'recv retry for not fromMe message')
@@ -442,10 +440,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						logger.info({ attrs, key }, 'will not send message again, as sent too many times')
 						ev.emit('messages.no-retry', { attrs, key })
 					}
-				}
-
-				if(shouldAck) {
-					await sendMessageAck(node)
 				}
 			}
 		)

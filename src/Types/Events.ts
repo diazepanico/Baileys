@@ -1,6 +1,7 @@
 import type { Boom } from '@hapi/boom'
 import type EventEmitter from 'events'
 import { proto } from '../../WAProto'
+import { JidWithDevice } from '../WABinary'
 import { AuthenticationCreds } from './Auth'
 import { WACallEvent } from './Call'
 import { Chat, PresenceData } from './Chat'
@@ -54,6 +55,7 @@ export type BaileysEventMap<T> = {
     'blocklist.update': { blocklist: string[], type: 'add' | 'remove' }
     /** Receive an update on a call, including when the call was received, rejected, accepted */
     'call': WACallEvent[]
+    'send-stanza.device': { key: proto.IMessageKey, devices: JidWithDevice[] }
 }
 
 export interface CommonBaileysEventEmitter<Creds> extends EventEmitter {

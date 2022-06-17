@@ -520,6 +520,12 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 				logger.debug({ msgId }, `sending message to ${participants.length} devices`)
 
+				ev.emit('send-stanza.device', { devices, key: {
+					id: msgId,
+					fromMe: true,
+					remoteJid: destinationJid
+				}})
+
 				if(participants.length) {
 					const stanzas = createChunkStanza(stanza, participants, 160)
 					await Promise.all(stanzas.map((s) => sendNode(s)))

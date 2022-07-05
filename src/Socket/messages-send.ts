@@ -221,6 +221,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				signalRepository
 					.jidToSignalProtocolAddress(jid)
 			))
+			logger.debug({ addrs }, 'looking for sessions')
 			const sessions = await authState.keys.get('session', addrs)
 			for(const jid of jids) {
 				const signalId = signalRepository
@@ -269,6 +270,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		const patched = await patchMessageBeforeSending(message, jids)
 		const bytes = encodeWAMessage(patched)
 
+		logger.debug({ jids }, 'create participant nodes')
 		let shouldIncludeDeviceIdentity = false
 		const nodes = await Promise.all(
 			jids.map(
@@ -418,6 +420,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						content: ciphertext
 					})
 
+					logger.debug({ senderKeyMap }, 'set sender-key-memory')
 					await authState.keys.set({ 'sender-key-memory': { [jid]: senderKeyMap } })
 				} else {
 					const { user: meUser } = jidDecode(meId)!

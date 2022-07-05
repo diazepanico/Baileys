@@ -67,6 +67,7 @@ export const makeSocket = ({
 			throw new Boom('Connection Closed', { statusCode: DisconnectReason.connectionClosed })
 		}
 
+		logger.debug({data_length: data.length}, 'encode frame')
 		const bytes = noise.encodeFrame(data)
         await sendPromise.call(ws, bytes) as Promise<void>
 	}
@@ -78,6 +79,7 @@ export const makeSocket = ({
 		}
 
 		const buff = encodeBinaryNode(frame)
+		logger.debug({buff_length: buff.length}, 'encode binary node in bytes')
 		return sendRawMessage(buff)
 	}
 

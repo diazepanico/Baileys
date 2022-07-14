@@ -192,6 +192,10 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		})
 	}
 
+	const updateProfileName = async(name: string) => {
+		return await chatModify({ pushNameSetting: name }, '')
+	}
+
 	const fetchBlocklist = async() => {
 		const result = await query({
 			tag: 'iq',
@@ -786,6 +790,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		fetchStatus,
 		updateProfilePicture,
 		updateProfileStatus,
+		updateProfileName,
 		updateBlockStatus,
 		getBusinessProfile,
 		resyncAppState,

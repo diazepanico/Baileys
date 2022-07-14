@@ -30,7 +30,7 @@ export default class WaCache<T = any> {
 	}
 
 	private _cleanCache() {
-    	const removeKeys = []
+    	const removeKeys: string[] = []
 
     	for(const [key, cache] of Object.entries(this._cacheData)) {
     		if(this._cacheIsExpired(cache)) {

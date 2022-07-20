@@ -193,7 +193,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 	}
 
 	const updateProfileName = async(name: string) => {
-		return await chatModify({ pushNameSetting: name }, '')
+		await chatModify({ pushNameSetting: name }, '')
 	}
 
 	const fetchBlocklist = async() => {

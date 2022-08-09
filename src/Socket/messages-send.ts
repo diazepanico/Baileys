@@ -495,7 +495,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					logger.debug({ jid }, 'adding device identity')
 				}
 
-				logger.debug({ msgId }, `sending message to ${participants.length} devices`)
+				logger.info({ msgId }, `sending message to ${participants.length} devices`)
 
 				await sendNode(stanza)
 			}

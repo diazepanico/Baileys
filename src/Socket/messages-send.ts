@@ -290,6 +290,17 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		return { nodes, shouldIncludeDeviceIdentity }
 	}
 
+	const getAllDeviceGroup = async(jid: string) => {
+		const devices: JidWithDevice[] = []
+
+		const groupData = await groupMetadata(jid)
+
+		const participantsList = groupData.participants.map(p => p.id)
+		const additionalDevices = await getUSyncDevices(participantsList, false, false)
+		devices.push(...additionalDevices)
+		return devices
+	}
+
 	const relayMessage = async(
 		jid: string,
 		message: proto.IMessage,
@@ -540,6 +551,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 	return {
 		...sock,
+		getAllDeviceGroup,
 		getPrivacyTokens,
 		assertSessions,
 		relayMessage,

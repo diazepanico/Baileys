@@ -636,17 +636,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					{
 						logger,
 						userJid,
-						getUrlInfo: text => getUrlInfo(
-							text,
-							{
-								thumbnailWidth: linkPreviewImageThumbnailWidth,
-								timeoutMs: 3_000,
-								uploadImage: generateHighQualityLinkPreview
-									? waUploadToServer
-									: undefined
-							},
-							logger
-						),
 						upload: waUploadToServer,
 						mediaCache: config.mediaCache,
 						...options,

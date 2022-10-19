@@ -22,6 +22,12 @@ export type CacheStore = {
     flushAll(): void
 }
 
+export interface RetryMessage {
+    message?: proto.IMessage;
+    additionalAttributes?: { [_: string]: string };
+    sendToAll?: boolean;
+}
+
 export type SocketConfig = {
     /** the WS url to connect to WA */
     waWebSocketUrl: string | URL
@@ -112,10 +118,12 @@ export type SocketConfig = {
      * implement this so that messages failed to send
      * (solves the "this message can take a while" issue) can be retried
      * */
-    getMessage: (key: proto.IMessageKey) => Promise<proto.IMessage | undefined>
+    getMessage: (key: proto.IMessageKey) => Promise<RetryMessage | undefined>
 
     makeSignalRepository: (auth: SignalAuthState) => SignalRepository
     
+
     /** time to wait between send messages again requests */
     sendMessagesAgainDelayMs: number
+
 }

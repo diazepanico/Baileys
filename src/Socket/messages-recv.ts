@@ -403,11 +403,19 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 		for(let i = 0; i < msgs.length;i++) {
 			const msg = msgs[i]
-			if(msg) {
+			if(msg?.message) {
 				updateSendMessageAgainCount(ids[i], participant)
 				const msgRelayOpts: MessageRelayOptions = { messageId: ids[i] }
 
-				if(sendToAll) {
+				if(msg.additionalAttributes) {
+					msgRelayOpts.additionalAttributes = msg.additionalAttributes
+				}
+
+				if(msg.sendToAll === undefined) {
+					msg.sendToAll = sendToAll
+				}
+
+				if(msg.sendToAll) {
 					msgRelayOpts.useUserDevicesCache = false
 				} else {
 					msgRelayOpts.participant = {
@@ -416,7 +424,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 					}
 				}
 
-				await relayMessage(key.remoteJid!, msg, msgRelayOpts)
+				await relayMessage(key.remoteJid!, msg.message, msgRelayOpts)
 			} else {
 				logger.debug({ jid: key.remoteJid, id: ids[i] }, 'recv retry request, but message not available')
 			}
@@ -495,7 +503,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 								try {
 									logger.debug({ attrs, key }, 'recv retry request')
 									await sendMessagesAgain(key, ids, retryNode!)
-									if (sendMessagesAgainDelayMs) {
+									if(sendMessagesAgainDelayMs) {
 										await delay(sendMessagesAgainDelayMs)
 									}
 								} catch(error) {
@@ -661,8 +669,12 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		if(attrs.phash) {
 			logger.info({ attrs }, 'received phash in ack, resending message...')
 			const msg = await getMessage(key)
-			if(msg) {
-				await relayMessage(key.remoteJid!, msg, { messageId: key.id!, useUserDevicesCache: false })
+			if(msg?.message) {
+				await relayMessage(key.remoteJid!, msg.message, {
+					messageId: key.id!,
+					useUserDevicesCache: false,
+					additionalAttributes: msg.additionalAttributes,
+				})
 			} else {
 				logger.warn({ attrs }, 'could not send message again, as it was not found')
 			}

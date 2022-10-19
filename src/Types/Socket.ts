@@ -13,6 +13,12 @@ export type WABrowserDescription = [string, string, string]
 
 export type MessageRetryMap = { [msgId: string]: number }
 
+export interface RetryMessage {
+    message?: proto.IMessage;
+    additionalAttributes?: { [_: string]: string };
+    sendToAll?: boolean;
+}
+
 export type SocketConfig = {
     /** the WS url to connect to WA */
     waWebSocketUrl: string | URL
@@ -78,8 +84,9 @@ export type SocketConfig = {
      * fetch a message from your store
      * implement this so that messages failed to send (solves the "this message can take a while" issue) can be retried
      * */
-    getMessage: (key: proto.IMessageKey) => Promise<proto.IMessage | undefined>
-    
+    getMessage: (key: proto.IMessageKey) => Promise<RetryMessage | undefined>
+
     /** time to wait between send messages again requests */
     sendMessagesAgainDelayMs: number
+
 }

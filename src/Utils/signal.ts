@@ -3,7 +3,7 @@ import { proto } from '../../WAProto'
 import { GroupCipher, GroupSessionBuilder, SenderKeyDistributionMessage, SenderKeyName, SenderKeyRecord } from '../../WASignalGroup'
 import { KEY_BUNDLE_TYPE } from '../Defaults'
 import { AuthenticationCreds, AuthenticationState, KeyPair, SignalAuthState, SignalIdentity, SignalKeyStore, SignedKeyPair } from '../Types/Auth'
-import { assertNodeErrorFree, BinaryNode, getBinaryNodeChild, getBinaryNodeChildBuffer, getBinaryNodeChildren, getBinaryNodeChildUInt, jidDecode, JidWithDevice, S_WHATSAPP_NET } from '../WABinary'
+import { assertNodeErrorFree, BinaryNode, getBinaryNodeChild, getBinaryNodeChildBuffer, getBinaryNodeChildren, getBinaryNodeChildUInt, jidDecode, jidEncode, JidWithDevice, S_WHATSAPP_NET } from '../WABinary'
 import { Curve, generateSignalPubKey } from './crypto'
 import { encodeBigEndian } from './generics'
 
@@ -178,6 +178,22 @@ export const encryptSignalProto = async(user: string, buffer: Buffer, auth: Sign
 	const { type: sigType, body } = await cipher.encrypt(buffer)
 	const type = sigType === 3 ? 'pkmsg' : 'msg'
 	return { type, ciphertext: Buffer.from(body, 'binary') }
+}
+
+export const forceGenerateSenderKey = async(group: string, meId: string, auth: SignalAuthState) => {
+	const senderName = jidToSignalSenderKeyName(group, meId)
+	await auth.keys.set({ 'sender-key': { [senderName]: null } })
+}
+
+export const setTrueAndSenderKeyMemory = async(jidGroup: string, devices: JidWithDevice[], auth: SignalAuthState) => {
+	const senderKeyMap: {[jid: string]: boolean} = {}
+
+	for(const { user, device } of devices) {
+		const jid = jidEncode(user, 's.whatsapp.net', device)
+		senderKeyMap[jid] = true
+	}
+
+	await auth.keys.set({ 'sender-key-memory': { [jidGroup]: senderKeyMap } })
 }
 
 export const encryptSenderKeyMsgSignalProto = async(group: string, data: Uint8Array | Buffer, meId: string, auth: SignalAuthState) => {

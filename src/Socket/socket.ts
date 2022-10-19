@@ -3,10 +3,10 @@ import { promisify } from 'util'
 import WebSocket from 'ws'
 import { proto } from '../../WAProto'
 import { DEF_CALLBACK_PREFIX, DEF_TAG_PREFIX, DEFAULT_ORIGIN, INITIAL_PREKEY_COUNT, MIN_PREKEY_COUNT } from '../Defaults'
-import { DisconnectReason, SocketConfig, GroupMetadataParticipants } from '../Types'
+import { DisconnectReason, GroupMetadataParticipants, SocketConfig } from '../Types'
 import { addTransactionCapability, bindWaitForConnectionUpdate, configureSuccessfulPairing, Curve, generateLoginNode, generateMdTagPrefix, generateRegistrationNode, getCodeFromWSError, getErrorCodeFromStreamError, getNextPreKeysNode, makeNoiseHandler, printQRIfNecessaryListener, promiseTimeout } from '../Utils'
-import { makeEventBuffer } from '../Utils/event-buffer'
 import WaCache from '../Utils/cache'
+import { makeEventBuffer } from '../Utils/event-buffer'
 import { assertNodeErrorFree, BinaryNode, encodeBinaryNode, getBinaryNodeChild, getBinaryNodeChildren, S_WHATSAPP_NET } from '../WABinary'
 
 /**
@@ -69,7 +69,7 @@ export const makeSocket = ({
 			throw new Boom('Connection Closed', { statusCode: DisconnectReason.connectionClosed })
 		}
 
-		logger.debug({data_length: data.length}, 'encode frame')
+		logger.debug({ data_length: data.length }, 'encode frame')
 		const bytes = noise.encodeFrame(data)
         await sendPromise.call(ws, bytes) as Promise<void>
 	}
@@ -81,7 +81,7 @@ export const makeSocket = ({
 		}
 
 		const buff = encodeBinaryNode(frame)
-		logger.debug({buff_length: buff.length}, 'encode binary node in bytes')
+		logger.debug({ buff_length: buff.length }, 'encode binary node in bytes')
 		return sendRawMessage(buff)
 	}
 

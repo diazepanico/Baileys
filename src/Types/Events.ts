@@ -5,7 +5,7 @@ import { WACallEvent } from './Call'
 import { Chat, ChatUpdate, PresenceData } from './Chat'
 import { Contact } from './Contact'
 import { GroupMetadata, ParticipantAction } from './GroupMetadata'
-import { MessageUpsertType, MessageUserReceiptUpdate, WAMessage, WAMessageKey, WAMessageUpdate } from './Message'
+import { MessageUpsertType, MessageUserPendingUpdate, MessageUserReceiptUpdate, WAMessage, WAMessageKey, WAMessageUpdate } from './Message'
 import { ConnectionState } from './State'
 
 export type BaileysEventMap = {
@@ -44,6 +44,8 @@ export type BaileysEventMap = {
     'messages.reaction': { key: WAMessageKey, reaction: proto.IReaction }[]
 
     'message-receipt.update': MessageUserReceiptUpdate[]
+
+    'message-pending.update': MessageUserPendingUpdate[]
 
     'groups.upsert': GroupMetadata[]
     'groups.update': Partial<GroupMetadata>[]

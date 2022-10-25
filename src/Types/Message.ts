@@ -4,6 +4,7 @@ import type { Readable } from 'stream'
 import type { URL } from 'url'
 import { proto } from '../../WAProto'
 import { MEDIA_HKDF_KEY_MAPPING } from '../Defaults'
+import { JidWithDevice } from '../WABinary'
 import type { GroupMetadata } from './GroupMetadata'
 
 // export the WAMessage Prototypes
@@ -220,6 +221,8 @@ export type WAMessageUpdate = { update: Partial<WAMessage>, key: proto.IMessageK
 export type WAMessageCursor = { before: WAMessageKey | undefined } | { after: WAMessageKey | undefined }
 
 export type MessageUserReceiptUpdate = { key: proto.IMessageKey, receipt: MessageUserReceipt }
+
+export type MessageUserPendingUpdate = { key: proto.IMessageKey, devices: JidWithDevice[] }
 
 export type MediaDecryptionKeyInfo = {
     iv: Buffer

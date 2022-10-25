@@ -499,6 +499,17 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				logger.info({ msgId }, `sending message to ${participants.length} devices`)
 
 				await sendNode(stanza)
+
+				if (isGroup) {
+					ev.emit('message-pending.update', [{
+						key: {
+							remoteJid: destinationJid,
+							fromMe: true,
+							id: msgId
+						},
+						devices
+					}])
+				}
 			}
 		)
 

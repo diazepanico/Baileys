@@ -16,6 +16,8 @@ export type ConnectionState = {
 	qr?: string
 	/** has the device received all pending notifications while it was offline */
 	receivedPendingNotifications?: boolean
+	/** offline_notifications  */
+	offline_notifications?: number;
 	/** legacy connection options */
 	legacy?: {
 		phoneConnected: boolean

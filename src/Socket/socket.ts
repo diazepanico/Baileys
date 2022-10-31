@@ -574,12 +574,14 @@ export const makeSocket = ({
 		const offlineNotifs = +(child?.attrs.count || 0)
 
 		logger.info(`handled ${offlineNotifs} offline messages/notifications`)
+		ev.emit('connection.update', { offline_notifications: offlineNotifs })
+
 		if(didStartBuffer) {
 			ev.flush()
 			logger.trace('flushed events for initial buffer')
 		}
 
-		ev.emit('connection.update', { receivedPendingNotifications: true })
+		ev.emit('connection.update', { receivedPendingNotifications: true, offline_notifications: 0 })
 	})
 
 	// update credentials when required

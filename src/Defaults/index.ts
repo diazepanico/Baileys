@@ -57,6 +57,7 @@ export const DEFAULT_CONNECTION_CONFIG: SocketConfig = {
 	generateHighQualityLinkPreview: false,
 	options: { },
 	sendMessagesAgainDelayMs: 250,
+	enableScheduleNodes: false,
 	getMessage: async() => undefined
 }
 

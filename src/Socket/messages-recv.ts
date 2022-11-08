@@ -31,6 +31,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		relayMessage,
 		sendReceipt,
 		uploadPreKeys,
+		scheduleNodesController,
 	} = sock
 
 	/** this mutex ensures that each retryRequest will wait for the previous one to finish */
@@ -656,6 +657,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		await ev.flush()
 
 		ev.emit('connection.update', { receivedPendingNotifications: true, offline_notifications: 0 })
+		scheduleNodesController?.start()
 	})
 
 	// recv a message

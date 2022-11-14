@@ -63,6 +63,7 @@ export const DEFAULT_CONNECTION_CONFIG: SocketConfig = {
 		snapshot: false,
 	},
 	sendMessagesAgainDelayMs: 250,
+	enableScheduleNodes: false,
 	getMessage: async() => undefined
 }
 

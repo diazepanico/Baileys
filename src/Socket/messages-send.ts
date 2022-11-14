@@ -290,13 +290,18 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		return { nodes, shouldIncludeDeviceIdentity }
 	}
 
-	const getAllDeviceGroup = async(jid: string) => {
+	const getAllDeviceGroup = async(jid: string, useCache: boolean = false) => {
 		const devices: JidWithDevice[] = []
 
-		const groupData = await groupMetadata(jid)
+		let groupData = cacheGroupMetadata.getCache(jid)
+		
+		if (!groupData) {
+			groupData = await groupMetadata(jid)
+			cacheGroupMetadata.putCache(jid, groupData)
+		}
 
 		const participantsList = groupData.participants.map(p => p.id)
-		const additionalDevices = await getUSyncDevices(participantsList, false, false)
+		const additionalDevices = await getUSyncDevices(participantsList, useCache, false)
 		devices.push(...additionalDevices)
 		return devices
 	}

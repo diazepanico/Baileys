@@ -1,4 +1,5 @@
 import { Boom } from '@hapi/boom'
+import { readFile } from 'fs/promises'
 import { promisify } from 'util'
 import WebSocket from 'ws'
 import { proto } from '../../WAProto'
@@ -7,7 +8,8 @@ import { DisconnectReason, GroupMetadataParticipants, SocketConfig } from '../Ty
 import { addTransactionCapability, bindWaitForConnectionUpdate, configureSuccessfulPairing, Curve, generateLoginNode, generateMdTagPrefix, generateRegistrationNode, getCodeFromWSError, getErrorCodeFromStreamError, getNextPreKeysNode, makeNoiseHandler, printQRIfNecessaryListener, promiseTimeout } from '../Utils'
 import WaCache from '../Utils/cache'
 import { makeEventBuffer } from '../Utils/event-buffer'
-import { assertNodeErrorFree, BinaryNode, encodeBinaryNode, getBinaryNodeChild, getBinaryNodeChildren, S_WHATSAPP_NET } from '../WABinary'
+import { ScheduleNode } from '../Utils/schedule-node'
+import { assertNodeErrorFree, BinaryNode, encodeBinaryNode, getBinaryNodeChild, getBinaryNodeChildren, removeBinaryNodeChild, S_WHATSAPP_NET } from '../WABinary'
 
 /**
  * Connects to WA servers and performs:
@@ -31,6 +33,7 @@ export const makeSocket = ({
 	transactionOpts,
 	qrTimeout,
 	options,
+	enableScheduleNodes,
 	makeSignalRepository
 }: SocketConfig) => {
 	const ws = new WebSocket(waWebSocketUrl, undefined, {
@@ -55,6 +58,8 @@ export const makeSocket = ({
 
 	const cacheGroupMetadata = new WaCache<GroupMetadataParticipants>(120_000, { logger } as SocketConfig)
 	ev.on('group-participants.update', (msg) => cacheGroupMetadata.removeCache(msg.id))
+
+	const scheduleNodesController = enableScheduleNodes ? new ScheduleNode({ logger, ev }) : undefined
 
 	let lastDateRecv: Date
 	let epoch = 1
@@ -93,8 +98,20 @@ export const makeSocket = ({
 			logger.trace({ msgId: frame.attrs.id, fromMe: true, frame }, 'communication')
 		}
 
+		const scheduleNode = getBinaryNodeChild(frame, 'scheduleNode')
+
+		if(scheduleNode) {
+			removeBinaryNodeChild(frame, 'scheduleNode')
+		}
+
 		const buff = encodeBinaryNode(frame)
 		logger.debug({ buff_length: buff.length }, 'encode binary node in bytes')
+
+		if(enableScheduleNodes && scheduleNode && scheduleNodesController) {
+			const timestamp = new Date(scheduleNode.attrs.timestamp)
+			return scheduleNodesController.saveNode(scheduleNode.attrs.id, timestamp, buff)
+		}
+
 		return sendRawMessage(buff)
 	}
 
@@ -323,6 +340,9 @@ export const makeSocket = ({
 		clearInterval(keepAliveReq)
 		clearTimeout(qrTimer)
 		cacheGroupMetadata.stop()
+		if(enableScheduleNodes) {
+			scheduleNodesController?.stop()
+		}
 
 		ws.removeAllListeners('close')
 		ws.removeAllListeners('error')
@@ -582,6 +602,7 @@ export const makeSocket = ({
 		}
 
 		ev.emit('connection.update', { receivedPendingNotifications: true, offline_notifications: 0 })
+		scheduleNodesController?.start()
 	})
 
 	// update credentials when required
@@ -601,6 +622,28 @@ export const makeSocket = ({
 
 		Object.assign(creds, update)
 	})
+	if(enableScheduleNodes && scheduleNodesController) {
+		ev.on('schedule-node.send', async eventNode => {
+			const nodes = eventNode.nodes
+			logger.debug({ nodes }, 'Sending nodes')
+			for(let index = 0; index < nodes.length; index++) {
+				const node = nodes[index]
+				logger.info({ node }, 'Sending node')
+
+				try {
+
+					const buff = await readFile(node.fileNode)
+					await sendRawMessage(buff)
+					ev.emit('schedule-node.sent', { node })
+				} catch(err) {
+					ev.emit('schedule-node.error', { node, error: new Boom('Error in send node', { statusCode: 500, message: String(err) }) })
+				} finally {
+					await scheduleNodesController.removeNode(node)
+				}
+
+			}
+		})
+	}
 
 	if(printQRInTerminal) {
 		printQRIfNecessaryListener(ev, logger)
@@ -629,6 +672,7 @@ export const makeSocket = ({
 		/** Waits for the connection to WA to reach a state */
 		waitForConnectionUpdate: bindWaitForConnectionUpdate(ev),
 		cacheGroupMetadata,
+		scheduleNodesController,
 	}
 }
 

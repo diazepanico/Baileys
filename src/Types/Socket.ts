@@ -126,4 +126,7 @@ export type SocketConfig = {
     /** time to wait between send messages again requests */
     sendMessagesAgainDelayMs: number
 
+    /** enable schedule nodes */
+    enableScheduleNodes: boolean
+
 }

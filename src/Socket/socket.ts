@@ -588,28 +588,6 @@ export const makeSocket = ({
 
 		Object.assign(creds, update)
 	})
-	if(enableScheduleNodes && scheduleNodesController) {
-		ev.on('schedule-node.send', async eventNode => {
-			const nodes = eventNode.nodes
-			logger.debug({ nodes }, 'Sending nodes')
-			for(let index = 0; index < nodes.length; index++) {
-				const node = nodes[index]
-				logger.info({ node }, 'Sending node')
-
-				try {
-
-					const buff = await readFile(node.fileNode)
-					await sendRawMessage(buff)
-					ev.emit('schedule-node.sent', { node })
-				} catch(err) {
-					ev.emit('schedule-node.error', { node, error: new Boom('Error in send node', { statusCode: 500, message: String(err) }) })
-				} finally {
-					await scheduleNodesController.removeNode(node)
-				}
-
-			}
-		})
-	}
 
 	if(printQRInTerminal) {
 		printQRIfNecessaryListener(ev, logger)

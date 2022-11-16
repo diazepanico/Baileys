@@ -1,3 +1,4 @@
+import { existsSync, mkdirSync } from 'fs'
 import { readdir, unlink, writeFile } from 'fs/promises'
 import path from 'node:path'
 import { Logger } from 'pino'
@@ -14,12 +15,12 @@ const matchFileName = (fileName: string) => {
 	return f[f.length - 1].match(/(.+)\-(\d+)\.msg/)
 }
 
-export const scheduleNodeSave = async(id: string, timestamp: Date, data: Uint8Array | Buffer) => {
+const scheduleNodeSave = async(id: string, timestamp: Date, data: Uint8Array | Buffer) => {
 	const fileName = createFileName(id, timestamp)
 	await writeFile(fileName, data)
 }
 
-export const scheduleNodeGet = async() => {
+const scheduleNodeGet = async() => {
 	return (await readdir(pathFile)).map((f) => `${pathFile}/${f}`)
 }
 
@@ -37,6 +38,9 @@ export class ScheduleNode {
 	private _timer: NodeJS.Timeout
 
 	constructor(config?: {logger: Logger, ev: BaileysBufferableEventEmitter}) {
+		if (!existsSync(pathFile)) {
+			mkdirSync(pathFile, { recursive: true })
+		}
 		this._logger = config?.logger
 		this._ev = config?.ev
 		scheduleNodeGet().then((files) => {

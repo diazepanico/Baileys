@@ -333,6 +333,14 @@ const processMessage = async(
 			const code = message.messageStubParameters?.[0]
 			emitGroupUpdate({ inviteCode: code })
 			break
+		case WAMessageStubType.GROUP_CHANGE_DESCRIPTION:
+			if(message.messageStubParameters?.length === 2) {
+				const [descId, desc] = message.messageStubParameters
+				emitGroupUpdate({ descId, desc })
+			}
+
+			break
+
 		}
 	} else if(content?.pollUpdateMessage) {
 		const creationMsgKey = content.pollUpdateMessage.pollCreationMessageKey!

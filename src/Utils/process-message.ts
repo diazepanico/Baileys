@@ -276,13 +276,14 @@ const processMessage = async(
 		}])
 	} else if(message.messageStubType) {
 		const jid = message.key!.remoteJid!
+		const key = message.key;
 		//let actor = whatsappID (message.participant)
 		let participants: string[]
 		const emitParticipantsUpdate = (action: ParticipantAction) => (
-			ev.emit('group-participants.update', { id: jid, participants, action })
+			ev.emit('group-participants.update', { id: jid, participants, action, key })
 		)
 		const emitGroupUpdate = (update: Partial<GroupMetadata>) => {
-			ev.emit('groups.update', [{ id: jid, ...update }])
+			ev.emit('groups.update', [{ updated: {id: jid, ...update}, key }])
 		}
 
 		const participantsIncludesMe = () => participants.find(jid => areJidsSameUser(meId, jid))

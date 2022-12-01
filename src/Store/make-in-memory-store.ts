@@ -190,7 +190,7 @@ export default (
 
 		ev.on('groups.update', updates => {
 			for(const update of updates) {
-				const id = update.id!
+				const id = update.updated.id!
 				if(groupMetadata[id]) {
 					Object.assign(groupMetadata[id], update)
 				} else {

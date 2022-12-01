@@ -49,9 +49,9 @@ export type BaileysEventMap = {
     'message-pending.update': MessageUserPendingUpdate[]
 
     'groups.upsert': GroupMetadata[]
-    'groups.update': Partial<GroupMetadata>[]
+    'groups.update': {updated: Partial<GroupMetadata>, key: WAMessageKey}[]
     /** apply an action to participants in a group */
-    'group-participants.update': { id: string, participants: string[], action: ParticipantAction }
+    'group-participants.update': { id: string, participants: string[], action: ParticipantAction, key: WAMessageKey }
 
     'blocklist.set': { blocklist: string[] }
     'blocklist.update': { blocklist: string[], type: 'add' | 'remove' }
@@ -81,7 +81,7 @@ export type BufferedEventData = {
     messageDeletes: { [key: string]: WAMessageKey }
     messageReactions: { [key: string]: { key: WAMessageKey, reactions: proto.IReaction[] } }
     messageReceipts: { [key: string]: { key: WAMessageKey, userReceipt: proto.IUserReceipt[] } },
-    groupUpdates: { [jid: string]: Partial<GroupMetadata> }
+    groupUpdates: { [jid: string]: {updated: Partial<GroupMetadata>, key: WAMessageKey} }
 }
 
 export type BaileysEvent = keyof BaileysEventMap

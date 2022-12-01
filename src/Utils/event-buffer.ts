@@ -471,7 +471,7 @@ function append<E extends BufferableEvent>(
 	case 'groups.update':
 		const groupUpdates = eventData as BaileysEventMap['groups.update']
 		for(const update of groupUpdates) {
-			const id = update.id!
+			const id = update.updated.id!
 			const groupUpdate = data.groupUpdates[id] || { }
 			if(!data.groupUpdates[id]) {
 				data.groupUpdates[id] = Object.assign(groupUpdate, update)

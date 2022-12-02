@@ -264,7 +264,10 @@ const processMessage = async(
 			}
 
 			break
-
+		case WAMessageStubType.GROUP_CHANGE_ICON:
+			const iconImg = message.messageStubParameters?.[0]
+			emitGroupUpdate({ iconImg })
+			break
 		}
 	}
 

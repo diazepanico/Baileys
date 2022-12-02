@@ -32,6 +32,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		relayMessage,
 		sendReceipt,
 		uploadPreKeys,
+		profilePictureUrl,
 		scheduleNodesController,
 	} = sock
 
@@ -315,7 +316,8 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				result.messageStubType = WAMessageStubType.GROUP_CHANGE_ICON
 
 				if(setPicture) {
-					result.messageStubParameters = [ setPicture.attrs.id ]
+					const newProfile = await profilePictureUrl(from, "preview").catch(() => null)
+					result.messageStubParameters = newProfile ? [ newProfile ]: undefined
 				}
 
 				result.participant = node?.attrs.author

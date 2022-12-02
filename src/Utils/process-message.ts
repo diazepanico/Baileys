@@ -341,7 +341,10 @@ const processMessage = async(
 			}
 
 			break
-
+		case WAMessageStubType.GROUP_CHANGE_ICON:
+			const iconImg = message.messageStubParameters?.[0]
+			emitGroupUpdate({ iconImg })
+			break
 		}
 	} else if(content?.pollUpdateMessage) {
 		const creationMsgKey = content.pollUpdateMessage.pollCreationMessageKey!

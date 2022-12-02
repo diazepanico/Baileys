@@ -34,6 +34,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		relayMessage,
 		sendReceipt,
 		uploadPreKeys,
+		profilePictureUrl,
 	} = sock
 
 	/** this mutex ensures that each retryRequest will wait for the previous one to finish */
@@ -337,7 +338,8 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				result.messageStubType = WAMessageStubType.GROUP_CHANGE_ICON
 
 				if(setPicture) {
-					result.messageStubParameters = [ setPicture.attrs.id ]
+					const newProfile = await profilePictureUrl(from, "preview").catch(() => null)
+					result.messageStubParameters = newProfile ? [ newProfile ]: undefined
 				}
 
 				result.participant = node?.attrs.author

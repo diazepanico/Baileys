@@ -16,6 +16,7 @@ export interface GroupMetadata {
     desc?: string
     descOwner?: string
     descId?: string
+    descTime?: number
     /** is set when the group only allows admins to change group settings */
     restrict?: boolean
     /** is set when the group only allows admins to write messages */
@@ -27,6 +28,10 @@ export interface GroupMetadata {
     ephemeralDuration?: number
     inviteCode?: string
     iconImg?: string
+
+    community?: boolean
+    communityId?: string
+    communityDefaultGroup?: boolean
 }
 
 

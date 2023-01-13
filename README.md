@@ -746,6 +746,11 @@ await sock.sendMessage(
     const jid = '111234567890-1594482450@g.us' // can be your own too
     await sock.updateProfilePicture(jid, { url: './new-profile-picture.jpeg' })
     ```
+- To change your privacy
+    ``` ts
+    const value = "none"
+    await sock.setPrivacySettings("readreceipts", value)
+    ```
 - To get someone's presence (if they're typing or online)
     ``` ts
     // the presence update is fetched and called here

@@ -61,6 +61,36 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		return privacySettings
 	}
 
+	const setPrivacySettings = async (name: string, value: string) => {
+
+		const categoryNode: BinaryNode = {
+			tag: 'category',
+			attrs: { name, value }
+		}
+
+		const { content } = await query({
+			tag: 'iq',
+			attrs: {
+				xmlns: 'privacy',
+				to: S_WHATSAPP_NET,
+				type: 'set'
+			},
+			 content: [
+				{
+					tag: 'privacy' ,
+					attrs: { },
+					content: [ categoryNode ]
+				}
+			 ]
+		})
+		
+		const privacySettingsUpdated = reduceBinaryNodeToDictionary(content?.[0] as BinaryNode, 'category')
+		
+		privacySettings = { ...privacySettings, ...privacySettingsUpdated }
+		
+		return privacySettings
+	}
+
 	/** helper function to run a generic IQ query */
 	const interactiveQuery = async(userNodes: BinaryNode[], queryNode: BinaryNode) => {
 		const result = await query({
@@ -848,6 +878,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		...sock,
 		processingMutex,
 		fetchPrivacySettings,
+		setPrivacySettings,
 		upsertMessage,
 		appPatch,
 		sendPresenceUpdate,

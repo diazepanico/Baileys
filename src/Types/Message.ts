@@ -53,6 +53,9 @@ type Mentionable = {
     /** list of jids that are mentioned in the accompanying text */
     mentions?: string[]
 }
+type ContextInfo = {
+    contextInfo?: proto.IContextInfo
+}
 type ViewOnce = {
     viewOnce?: boolean
 }
@@ -135,7 +138,7 @@ export type AnyRegularMessageContent = (
 	    text: string
         linkPreview?: WAUrlInfo | null
     }
-    & Mentionable & Buttonable & Templatable & Listable)
+    & Mentionable & Buttonable & Templatable & Listable & ContextInfo)
     | AnyMediaMessageContent
     | ({
         poll: PollMessageOptions

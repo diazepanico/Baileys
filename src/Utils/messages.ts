@@ -316,7 +316,17 @@ export const generateWAMessageContent = async(
 			}
 		}
 
-		m.extendedTextMessage = extContent
+		const externalAdReply = message.contextInfo?.externalAdReply
+		if (externalAdReply) {
+			extContent.contextInfo = { externalAdReply }
+		}
+		
+		if (urlInfo || externalAdReply) {
+			m.extendedTextMessage = extContent
+		} else {
+			m.conversation = message.text
+		}
+
 	} else if('contacts' in message) {
 		const contactLen = message.contacts.contacts.length
 		if(!contactLen) {

@@ -350,11 +350,11 @@ const processMessage = async(
 		const creationMsgKey = content.pollUpdateMessage.pollCreationMessageKey!
 		// we need to fetch the poll creation message to get the poll enc key
 		const pollMsg = await getMessage(creationMsgKey)
-		if(pollMsg) {
+		if(pollMsg?.message) {
 			const meIdNormalised = jidNormalizedUser(meId)
 			const pollCreatorJid = getKeyAuthor(creationMsgKey, meIdNormalised)
 			const voterJid = getKeyAuthor(message.key!, meIdNormalised)
-			const pollEncKey = pollMsg.messageContextInfo?.messageSecret!
+			const pollEncKey = pollMsg.message.messageContextInfo?.messageSecret!
 
 			try {
 				const voteMsg = decryptPollVote(

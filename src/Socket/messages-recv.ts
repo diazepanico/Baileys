@@ -102,7 +102,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 		let retryCount = msgRetryCache.get<number>(msgId) || 0
 		if(retryCount >= 5) {
-			logger.debug({ retryCount, msgId }, 'reached retry limit, clearing')
+			logger.error({ retryCount, msgId }, 'reached retry limit, clearing')
 			msgRetryCache.del(msgId)
 			return
 		}
@@ -628,7 +628,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 										await delay(retryRequestDelayMs)
 									}
 								} else {
-									logger.debug({ node }, 'connection closed, ignoring retry req')
+									logger.error({ node }, 'connection closed, ignoring retry req')
 								}
 							}
 						)

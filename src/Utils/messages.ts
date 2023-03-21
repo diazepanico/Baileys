@@ -453,7 +453,7 @@ export const generateWAMessageContent = async(
 		m = { buttonsMessage }
 	} else if('templateButtons' in message && !!message.templateButtons) {
 		const msg: proto.Message.TemplateMessage.IHydratedFourRowTemplate = {
-			hydratedButtons: message.templateButtons
+			hydratedButtons: message.templateButtons,
 		}
 
 		if('text' in message) {
@@ -472,11 +472,19 @@ export const generateWAMessageContent = async(
 		}
 
 		m = {
-			templateMessage: {
-				fourRowTemplate: msg,
-				hydratedTemplate: msg
+			documentWithCaptionMessage: {
+				message: {
+					templateMessage: {
+						contextInfo: {
+							disappearingMode: {
+								initiator: proto.DisappearingMode.Initiator.CHANGED_IN_CHAT
+							}
+						},
+						hydratedTemplate: msg,
+					} as proto.Message.ITemplateMessage
+				}
 			}
-		}
+		} as proto.IMessage
 	}
 
 	if('sections' in message && !!message.sections) {

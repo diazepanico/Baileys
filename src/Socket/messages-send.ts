@@ -1,9 +1,10 @@
 
 import { Boom } from '@hapi/boom'
+import { randomBytes } from 'crypto'
 import NodeCache from 'node-cache'
 import { proto } from '../../WAProto'
 import { DEFAULT_CACHE_TTLS, WA_DEFAULT_EPHEMERAL } from '../Defaults'
-import { AnyMessageContent, MediaConnInfo, MessageReceiptType, MessageRelayOptions, MiscMessageGenerationOptions, SocketConfig, WAMessageKey } from '../Types'
+import { AnyMessageContent, MediaConnInfo, MessageReceiptType, MessageRelayOptions, MiscMessageGenerationOptions, SocketConfig, WACall, WAMessageKey } from '../Types'
 import { aggregateMessageKeysNotFromMe, assertMediaContent, bindWaitForEvent, decryptMediaRetryData, encodeSignedDeviceIdentity, encodeWAMessage, encryptMediaRetryRequest, extractDeviceJids, generateMessageID, generateWAMessage, getStatusCodeForMediaRetry, getUrlFromDirectPath, getWAUploadToServer, parseAndInjectE2ESessions, unixTimestampSeconds } from '../Utils'
 import { getUrlInfo } from '../Utils/link-preview'
 import { areJidsSameUser, BinaryNode, BinaryNodeAttributes, getBinaryNodeChild, getBinaryNodeChildren, isJidGroup, isJidUser, jidDecode, jidEncode, jidNormalizedUser, JidWithDevice, S_WHATSAPP_NET } from '../WABinary'
@@ -117,6 +118,106 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 		logger.debug({ attrs: node.attrs, messageIds }, 'sending receipt for messages')
 		await sendNode(node)
+	}
+
+	const sendCallOffer = async(jidTo: string, isVideo: boolean = false) => {
+		const meId = authState.creds.me!.id
+
+		if(isJidGroup(jidTo)) {
+			return
+		}
+
+		const content: BinaryNode[] = [
+			{ tag: 'audio', attrs: { enc: 'opus', rate: '16000' } },
+			{ tag: 'audio', attrs: { enc: 'opus', rate: '8000' } },
+		]
+
+		if(isVideo) {
+			content.push({
+				tag: 'video',
+				attrs: {
+					orientation: '0',
+					screen_width: '1920',
+					screen_height: '1080',
+					device_orientation: '0',
+					enc: 'vp8',
+					dec: 'vp8',
+				}
+			})
+		}
+
+		content.push({ tag: 'net', attrs: { medium: '3' } })
+		content.push({ tag: 'capability', attrs: { ver: '1' }, content: new Uint8Array([1, 4, 255, 131, 207, 4]) })
+		content.push({ tag: 'encopt', attrs: { keygen: '2' } })
+
+		let call: WACall = { } as WACall
+
+		await authState.keys.transaction(
+			async() => {
+				const devices = await getUSyncDevices([jidTo], false, false)
+				const allJids: string[] = []
+				for(const { user, device } of devices) {
+					const jid = jidEncode(user, 's.whatsapp.net', device)
+					allJids.push(jid)
+				}
+
+				await assertSessions(allJids, true)
+
+				const encKey = randomBytes(32)
+
+				const msg: proto.IMessage = {
+					call: {
+						callKey: encKey
+					}
+				}
+				const { nodes: destinationNodes, shouldIncludeDeviceIdentity } = await createParticipantNodes(allJids, msg, { count: '0' })
+
+				content.push({ tag: 'destination', attrs: {}, content: destinationNodes })
+
+				if(shouldIncludeDeviceIdentity) {
+					content.push({
+						tag: 'device-identity',
+						attrs: { },
+						content: encodeSignedDeviceIdentity(authState.creds.account!, true)
+					})
+
+					logger.debug({ jidTo }, 'adding device identity')
+				}
+
+				const callId = randomBytes(16).toString('hex')
+
+				const stanza: BinaryNode = {
+					tag: 'call',
+					attrs: {
+						to: jidTo,
+					},
+					content: [{
+						tag: 'offer',
+						attrs: {
+							'call-id': callId,
+							'call-creator': meId,
+						},
+						content
+					}]
+				}
+
+				const responseNode = await query(stanza)
+				const userNode = getBinaryNodeChild(responseNode, 'user')
+				const devicesNode = getBinaryNodeChildren(userNode, 'device')
+
+				call = {
+					isVideo, 
+					id: callId,
+					devices: devicesNode.map((d) => d.attrs.jid),
+					creatorJid: meId,
+					to: jidTo,
+					from: meId,
+				}
+
+			}
+		)
+
+		return call
 	}
 
 	/** Correctly bulk send receipts to multiple chats, participants */
@@ -556,6 +657,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		refreshMediaConn,
 	    waUploadToServer,
 		fetchPrivacySettings,
+		sendCallOffer,
 		updateMediaMessage: async(message: proto.IWebMessageInfo) => {
 			const content = assertMediaContent(message.message)
 			const mediaKey = content.mediaKey!

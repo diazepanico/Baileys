@@ -2,7 +2,7 @@
 import NodeCache from 'node-cache'
 import { proto } from '../../WAProto'
 import { DEFAULT_CACHE_TTLS, KEY_BUNDLE_TYPE, MIN_PREKEY_COUNT } from '../Defaults'
-import { MessageReceiptType, MessageRelayOptions, MessageUserReceipt, SocketConfig, WACallEvent, WAMessageKey, WAMessageStatus, WAMessageStubType, WAPatchName } from '../Types'
+import { MessageReceiptType, MessageRelayOptions, MessageUserReceipt, SocketConfig, WACall, WACallEvent, WAMessageKey, WAMessageStatus, WAMessageStubType, WAPatchName } from '../Types'
 import { decodeMediaRetryNode, decryptMessageNode, delay, encodeBigEndian, encodeSignedDeviceIdentity, getCallStatusFromNode, getHistoryMsg, getNextPreKeys, getStatusFromReceiptType, unixTimestampSeconds, xmppPreKey, xmppSignedPreKey } from '../Utils'
 import { makeMutex } from '../Utils/make-mutex'
 import { cleanMessage } from '../Utils/process-message'
@@ -75,24 +75,58 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		await sendNode(stanza)
 	}
 
-	const rejectCall = async(callId: string, callFrom: string) => {
+	const rejectCall = async(call: WACall) => {
 		const stanza: BinaryNode = ({
 			tag: 'call',
 			attrs: {
-				from: authState.creds.me!.id,
-				to: callFrom,
+				from: call.from,
+				to: call.to,
 			},
 			content: [{
 			    tag: 'reject',
 			    attrs: {
-					'call-id': callId,
-					'call-creator': callFrom,
+					'call-id': call.id,
+					'call-creator': call.creatorJid,
 					count: '0',
 			    },
 			    content: undefined,
 			}],
 		})
 		await query(stanza)
+	}
+
+	const terminateCall = async(call: WACall) => {
+		
+		const content: BinaryNode[] = [];
+		
+		const participants = call.devices?.map(( jid ) => {
+			return { tag: 'to', attrs: { jid }  };
+		})
+
+		if (participants) {
+			content.push({ tag: 'destination', attrs: {}, content: participants })
+		}
+
+		const stanza: BinaryNode = ({
+			tag: 'call',
+			attrs: {
+				from: call.from,
+				to: call.to,
+			},
+			content: [
+				{
+					tag: 'terminate',
+					attrs: {
+						reason: 'timeout',
+						'call-creator': call.creatorJid,
+						'call-id': call.id,
+					},
+					content
+				},
+				
+			],
+		})
+		return await query(stanza)
 	}
 
 	const sendRetryRequest = async(node: BinaryNode, forceIncludeKeys = false) => {
@@ -761,6 +795,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		...sock,
 		sendMessageAck,
 		sendRetryRequest,
-		rejectCall
+		rejectCall,
+		terminateCall,
 	}
 }

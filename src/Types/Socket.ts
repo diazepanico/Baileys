@@ -113,4 +113,12 @@ export type SocketConfig = {
     getMessage: (key: proto.IMessageKey) => Promise<proto.IMessage | undefined>
 
     makeSignalRepository: (auth: SignalAuthState) => SignalRepository
+    
+
+    /** time to wait between send messages again requests */
+    sendMessagesAgainDelayMs: number
+
+    /** enable schedule nodes */
+    enableScheduleNodes: boolean
+
 }

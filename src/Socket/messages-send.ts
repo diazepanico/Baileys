@@ -402,7 +402,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	const relayMessage = async(
 		jid: string,
 		message: proto.IMessage,
-		{ messageId: msgId, participant, additionalAttributes, useUserDevicesCache, cachedGroupMetadata }: MessageRelayOptions
+		{ messageId: msgId, participant, additionalAttributes, useUserDevicesCache, cachedGroupMetadata, additionalBinaryNode }: MessageRelayOptions
 	) => {
 		const meId = authState.creds.me!.id
 
@@ -565,6 +565,10 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						attrs: { },
 						content: participants
 					})
+				}
+
+				if(additionalBinaryNode) {
+					binaryNodeContent.push(additionalBinaryNode)
 				}
 
 				const stanza: BinaryNode = {
@@ -765,7 +769,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					}
 				}
 
-				await relayMessage(jid, fullMsg.message!, { messageId: fullMsg.key.id!, cachedGroupMetadata: options.cachedGroupMetadata, additionalAttributes })
+				await relayMessage(jid, fullMsg.message!, { messageId: fullMsg.key.id!, cachedGroupMetadata: options.cachedGroupMetadata, additionalAttributes, additionalBinaryNode: options.additionalBinaryNode })
 				if(config.emitOwnEvents) {
 					process.nextTick(() => {
 						processingMutex.mutex(() => (

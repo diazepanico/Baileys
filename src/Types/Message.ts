@@ -4,6 +4,7 @@ import type { Readable } from 'stream'
 import type { URL } from 'url'
 import { proto } from '../../WAProto'
 import { MEDIA_HKDF_KEY_MAPPING } from '../Defaults'
+import { BinaryNode } from '../WABinary'
 import type { GroupMetadata } from './GroupMetadata'
 import { CacheStore } from './Socket'
 
@@ -181,6 +182,8 @@ type MinimalRelayOptions = {
     messageId?: string
     /** cached group metadata, use to prevent redundant requests to WA & speed up msg sending */
     cachedGroupMetadata?: (jid: string) => Promise<GroupMetadataParticipants | undefined>
+    /** additional binary node */
+    additionalBinaryNode?: BinaryNode
 }
 
 export type MessageRelayOptions = MinimalRelayOptions & {

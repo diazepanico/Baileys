@@ -1,4 +1,5 @@
 import { Boom } from '@hapi/boom'
+import { readFile } from 'fs/promises'
 import { promisify } from 'util'
 import WebSocket from 'ws'
 import { proto } from '../../WAProto'
@@ -6,7 +7,8 @@ import { DEF_CALLBACK_PREFIX, DEF_TAG_PREFIX, DEFAULT_ORIGIN, INITIAL_PREKEY_COU
 import { DisconnectReason, SocketConfig } from '../Types'
 import { addTransactionCapability, bindWaitForConnectionUpdate, configureSuccessfulPairing, Curve, generateLoginNode, generateMdTagPrefix, generateRegistrationNode, getCodeFromWSError, getErrorCodeFromStreamError, getNextPreKeysNode, makeNoiseHandler, printQRIfNecessaryListener, promiseTimeout } from '../Utils'
 import { makeEventBuffer } from '../Utils/event-buffer'
-import { assertNodeErrorFree, BinaryNode, encodeBinaryNode, getBinaryNodeChild, getBinaryNodeChildren, S_WHATSAPP_NET } from '../WABinary'
+import { ScheduleNode } from '../Utils/schedule-node'
+import { assertNodeErrorFree, BinaryNode, encodeBinaryNode, getBinaryNodeChild, getBinaryNodeChildren, removeBinaryNodeChild, S_WHATSAPP_NET } from '../WABinary'
 
 /**
  * Connects to WA servers and performs:
@@ -29,6 +31,7 @@ export const makeSocket = ({
 	transactionOpts,
 	qrTimeout,
 	options,
+	enableScheduleNodes,
 	makeSignalRepository
 }: SocketConfig) => {
 	const ws = new WebSocket(waWebSocketUrl, undefined, {
@@ -50,6 +53,9 @@ export const makeSocket = ({
 	// add transaction capability
 	const keys = addTransactionCapability(authState.keys, logger, transactionOpts)
 	const signalRepository = makeSignalRepository({ creds, keys })
+
+
+	const scheduleNodesController = enableScheduleNodes ? new ScheduleNode({ logger, ev }) : undefined
 
 	let lastDateRecv: Date
 	let epoch = 1
@@ -87,7 +93,20 @@ export const makeSocket = ({
 			logger.trace({ msgId: frame.attrs.id, fromMe: true, frame }, 'communication')
 		}
 
+		const scheduleNode = getBinaryNodeChild(frame, 'scheduleNode')
+
+		if(scheduleNode) {
+			removeBinaryNodeChild(frame, 'scheduleNode')
+		}
+
 		const buff = encodeBinaryNode(frame)
+		logger.debug({ buff_length: buff.length }, 'encode binary node in bytes')
+
+		if(enableScheduleNodes && scheduleNode && scheduleNodesController) {
+			const timestamp = new Date(scheduleNode.attrs.timestamp)
+			return scheduleNodesController.saveNode(scheduleNode.attrs.id, timestamp, buff)
+		}
+
 		return sendRawMessage(buff)
 	}
 
@@ -315,6 +334,9 @@ export const makeSocket = ({
 
 		clearInterval(keepAliveReq)
 		clearTimeout(qrTimer)
+		if(enableScheduleNodes) {
+			scheduleNodesController?.stop()
+		}
 
 		ws.removeAllListeners('close')
 		ws.removeAllListeners('error')
@@ -566,6 +588,7 @@ export const makeSocket = ({
 		}
 
 		ev.emit('connection.update', { receivedPendingNotifications: true })
+		scheduleNodesController?.start()
 	})
 
 	// update credentials when required
@@ -612,6 +635,7 @@ export const makeSocket = ({
 		uploadPreKeysToServerIfRequired,
 		/** Waits for the connection to WA to reach a state */
 		waitForConnectionUpdate: bindWaitForConnectionUpdate(ev),
+		scheduleNodesController,
 	}
 }
 

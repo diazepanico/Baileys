@@ -1,5 +1,6 @@
 import type { Boom } from '@hapi/boom'
 import { proto } from '../../WAProto'
+import { WaScheduleNodeData } from '../Utils/schedule-node'
 import { AuthenticationCreds } from './Auth'
 import { WACallEvent } from './Call'
 import { Chat, ChatUpdate, PresenceData } from './Chat'
@@ -54,6 +55,10 @@ export type BaileysEventMap = {
     'blocklist.update': { blocklist: string[], type: 'add' | 'remove' }
     /** Receive an update on a call, including when the call was received, rejected, accepted */
     'call': WACallEvent[]
+    /**  */
+    'schedule-node.send': { nodes: WaScheduleNodeData[] }
+    'schedule-node.sent': { node: WaScheduleNodeData }
+    'schedule-node.error': { node: WaScheduleNodeData, error: Boom }
 }
 
 export type BufferedEventData = {

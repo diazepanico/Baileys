@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto'
 import NodeCache from 'node-cache'
 import { proto } from '../../WAProto'
 import { DEFAULT_CACHE_TTLS, WA_DEFAULT_EPHEMERAL } from '../Defaults'
-import { AnyMessageContent, MediaConnInfo, MessageReceiptType, MessageRelayOptions, MiscMessageGenerationOptions, SocketConfig, WACall, WAMessageKey } from '../Types'
+import { AnyMessageContent, DisconnectReason, MediaConnInfo, MessageReceiptType, MessageRelayOptions, MiscMessageGenerationOptions, SocketConfig, WACall, WAMessageKey, WAMessageStatus } from '../Types'
 import { aggregateMessageKeysNotFromMe, assertMediaContent, bindWaitForEvent, decryptMediaRetryData, encodeSignedDeviceIdentity, encodeWAMessage, encryptMediaRetryRequest, extractDeviceJids, generateMessageID, generateWAMessage, getStatusCodeForMediaRetry, getUrlFromDirectPath, getWAUploadToServer, parseAndInjectE2ESessions, unixTimestampSeconds } from '../Utils'
 import { getUrlInfo } from '../Utils/link-preview'
 import { areJidsSameUser, BinaryNode, BinaryNodeAttributes, getBinaryNodeChild, getBinaryNodeChildren, isJidGroup, isJidUser, jidDecode, jidEncode, jidNormalizedUser, JidWithDevice, S_WHATSAPP_NET } from '../WABinary'
@@ -426,6 +426,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		const meId = authState.creds.me!.id
 
 		let shouldIncludeDeviceIdentity = false
+		let nodeAck: BinaryNode = { tag: 'ack', attrs: { } };
 
 		const { user, server } = jidDecode(jid)!
 		const isGroup = server === 'g.us'
@@ -629,8 +630,14 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				}
 
 				logger.info({ msgId }, `sending message to ${participants.length} devices`)
-
-				await sendNode(stanza)
+				try {
+					nodeAck = await query(stanza)
+				} catch (e) {					
+					if ((e  as Boom)?.output?.statusCode != DisconnectReason.timedOut) {
+						throw e;
+					}
+					nodeAck.tag = 'error-timeout'
+				}
 
 				if (isGroup) {
 					ev.emit('message-pending.update', [{
@@ -645,7 +652,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			}
 		)
 
-		return msgId
+		return {msgId, nodeAck}
 	}
 
 	const getPrivacyTokens = async(jids: string[]) => {
@@ -788,7 +795,13 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					}
 				}
 
-				await relayMessage(jid, fullMsg.message!, { messageId: fullMsg.key.id!, cachedGroupMetadata: options.cachedGroupMetadata, additionalAttributes, additionalBinaryNode: options.additionalBinaryNode })
+				const { nodeAck } = await relayMessage(jid, fullMsg.message!, { messageId: fullMsg.key.id!, cachedGroupMetadata: options.cachedGroupMetadata, additionalAttributes, additionalBinaryNode: options.additionalBinaryNode })
+				
+				if (nodeAck.tag == 'ack' && nodeAck.attrs.class == 'message') {
+					if (nodeAck.attrs.id == fullMsg.key.id) {
+						fullMsg.status = nodeAck.attrs.error || nodeAck.attrs.phash ? WAMessageStatus.ERROR : WAMessageStatus.SERVER_ACK
+					}
+				}
 				if(config.emitOwnEvents) {
 					process.nextTick(() => {
 						processingMutex.mutex(() => (

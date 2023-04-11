@@ -2,7 +2,7 @@
 import NodeCache from 'node-cache'
 import { proto } from '../../WAProto'
 import { DEFAULT_CACHE_TTLS, KEY_BUNDLE_TYPE, MIN_PREKEY_COUNT } from '../Defaults'
-import { MessageReceiptType, MessageRelayOptions, MessageUserReceipt, SocketConfig, WACall, WACallEvent, WAMessageKey, WAMessageStatus, WAMessageStubType, WAPatchName } from '../Types'
+import { MessageReceiptType, MessageRelayOptions, MessageUserReceipt, MessageUserReceiptUpdate, SocketConfig, WACall, WACallEvent, WAMessageKey, WAMessageStatus, WAMessageStubType, WAPatchName } from '../Types'
 import { decodeMediaRetryNode, decryptMessageNode, delay, encodeBigEndian, encodeSignedDeviceIdentity, getCallStatusFromNode, getHistoryMsg, getNextPreKeys, getStatusFromReceiptType, unixTimestampSeconds, xmppPreKey, xmppSignedPreKey } from '../Utils'
 import { makeMutex } from '../Utils/make-mutex'
 import { cleanMessage } from '../Utils/process-message'
@@ -549,18 +549,39 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						)
 					) {
 						if(isJidGroup(remoteJid)) {
+							const receipts: MessageUserReceiptUpdate[] = []
+							const participantsBatch = getBinaryNodeChildren(node, 'participants')
+							const updateKey: keyof MessageUserReceipt = status === proto.WebMessageInfo.Status.DELIVERY_ACK ? 'receiptTimestamp' : 'readTimestamp'
+							
 							if(attrs.participant) {
-								const updateKey: keyof MessageUserReceipt = status === proto.WebMessageInfo.Status.DELIVERY_ACK ? 'receiptTimestamp' : 'readTimestamp'
-								ev.emit(
-									'message-receipt.update',
-									ids.map(id => ({
-										key: { ...key, id },
-										receipt: {
-											userJid: jidNormalizedUser(attrs.participant),
-											[updateKey]: +attrs.t
-										}
-									}))
-								)
+								ids.map(id =>  receipts.push({
+									key: { ...key, id },
+									receipt: {
+										userJid: jidNormalizedUser(attrs.participant),
+										[updateKey]: +attrs.t
+									}
+								}))
+							}
+							if (participantsBatch.length > 0) {
+								participantsBatch.map((participants) => {
+									const idMessage = participants.attrs.key;
+									const users = getBinaryNodeChildren(participants, 'user')
+									users.map((user) => {
+										const userJid = user.attrs.jid;
+										receipts.push({
+											key: { ...key, id: idMessage, participant: userJid },
+											receipt: {
+												userJid: jidNormalizedUser(userJid),
+												[updateKey]: +user.attrs.t
+											}
+										})
+									})
+								})
+								
+							}
+
+							if (receipts.length > 0) {
+								ev.emit('message-receipt.update', receipts)
 							}
 						} else {
 							ev.emit(

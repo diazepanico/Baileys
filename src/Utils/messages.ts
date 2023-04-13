@@ -181,6 +181,9 @@ export const prepareWAMessageMedia = async(
 						uploadData.height = originalImageDimensions.height
 						logger?.debug('set dimensions')
 					}
+					if (!uploadData.seconds && originalImageDimensions) {
+						uploadData.seconds = Number(originalImageDimensions.duration || null)
+					}
 
 					logger?.debug('generated thumbnail')
 				}

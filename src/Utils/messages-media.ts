@@ -92,6 +92,27 @@ const extractVideoThumb = async(
     	})
 }) as Promise<void>
 
+export const extractInfoVideo = async (
+	path: string
+) => new Promise<{ width: number; height: number, duration: string  } | undefined>((resolve, reject) => {
+	const cmd = `ffprobe -v quiet -show_entries stream=width,height,duration -of json=compact=1 ${path}`
+
+	exec(cmd, (err, dimensionsJson) => {
+		if (err) {
+			reject(err)
+		} else {
+			try {
+				const dimensions = JSON.parse(dimensionsJson)
+				console.log({d: dimensions?.['streams']});
+				
+				resolve(dimensions?.['streams']?.[0])
+			} catch (err2) {
+				reject(err2)
+			}
+		}
+	})
+})
+
 export const extractImageThumb = async(bufferOrFilePath: Readable | Buffer | string, width = 32) => {
 	if(bufferOrFilePath instanceof Readable) {
 		bufferOrFilePath = await toBuffer(bufferOrFilePath)
@@ -333,7 +354,7 @@ export async function generateThumbnail(
     }
 ) {
 	let thumbnail: string | undefined
-	let originalImageDimensions: { width: number, height: number } | undefined
+	let originalImageDimensions: { width: number, height: number, duration?: string } | undefined
 	if(mediaType === 'image') {
 		const { buffer, original } = await extractImageThumb(file)
 		thumbnail = buffer.toString('base64')
@@ -353,6 +374,12 @@ export async function generateThumbnail(
 			await fs.unlink(imgFilename)
 		} catch(err) {
 			options.logger?.debug('could not generate video thumb: ' + err)
+		}
+		try {
+			const original = await extractInfoVideo(file)
+			originalImageDimensions = original
+		} catch (err) {
+			options.logger?.debug('could not generate video dimension: ' + err)
 		}
 	}
 

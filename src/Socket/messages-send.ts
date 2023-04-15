@@ -535,7 +535,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 					if (Object.keys(senderKeyMap).length && force_send == true) {
 							const senderKeyMapKeys = Object.keys(senderKeyMap);
-							console.log(senderKeyMapKeys);
 							const senderKeyMsg = {
 									senderKeyDistributionMessage: {
 											axolotlSenderKeyDistributionMessage: senderKeyDistributionMessage,

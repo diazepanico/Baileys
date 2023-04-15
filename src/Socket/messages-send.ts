@@ -813,6 +813,10 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					}
 				}
 
+				if (options?.custom_message_handler) {
+					options?.custom_message_handler.addMessage(fullMsg);
+				}
+
 				const { nodeAck } = await relayMessage(jid, fullMsg.message!, { messageId: fullMsg.key.id!, cachedGroupMetadata: options.cachedGroupMetadata, additionalAttributes, additionalBinaryNode: options.additionalBinaryNode })
 				
 				if (nodeAck.tag == 'ack' && nodeAck.attrs.class == 'message') {

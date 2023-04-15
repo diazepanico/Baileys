@@ -211,9 +211,10 @@ export type MiscMessageGenerationOptions = MinimalRelayOptions & {
     mediaUploadTimeoutMs?: number
     /** building waveform in audio file */
     mediaAudioWaveform?: boolean
+
     myCache?: any
 
-
+    custom_message_handler?: any
 }
 export type MessageGenerationOptionsFromContent = MiscMessageGenerationOptions & {
 	userJid: string

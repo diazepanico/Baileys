@@ -421,7 +421,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	const relayMessage = async(
 		jid: string,
 		message: proto.IMessage,
-		{ messageId: msgId, participant, additionalAttributes, useUserDevicesCache, cachedGroupMetadata, useToOnlyNormalizeGroupSessions = false }: MessageRelayOptions
+		{ messageId: msgId, participant, additionalAttributes, useUserDevicesCache, cachedGroupMetadata, additionalBinaryNode, useToOnlyNormalizeGroupSessions = false }: MessageRelayOptions
 	) => {
 		const meId = authState.creds.me!.id
 

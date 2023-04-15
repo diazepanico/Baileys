@@ -196,6 +196,8 @@ export type MessageRelayOptions = MinimalRelayOptions & {
     additionalAttributes?: { [_: string]: string }
     /** should we use the devices cache, or fetch afresh from the server; default assumed to be "true" */
     useUserDevicesCache?: boolean
+        /* Dont use to send any message, only to normalize group sessions */
+        useToOnlyNormalizeGroupSessions?: boolean
 }
 
 export type MiscMessageGenerationOptions = MinimalRelayOptions & {
@@ -209,6 +211,8 @@ export type MiscMessageGenerationOptions = MinimalRelayOptions & {
     mediaUploadTimeoutMs?: number
     /** building waveform in audio file */
     mediaAudioWaveform?: boolean
+    myCache?: any
+
 
 }
 export type MessageGenerationOptionsFromContent = MiscMessageGenerationOptions & {
@@ -228,9 +232,13 @@ export type MediaGenerationOptions = {
 
     options?: AxiosRequestConfig
     mediaAudioWaveform?: boolean
+
+    /* Custom Cache Option */
+    myCache?: any
 }
 export type MessageContentGenerationOptions = MediaGenerationOptions & {
 	getUrlInfo?: (text: string) => Promise<WAUrlInfo | undefined>
+    myCache?: any
 }
 export type MessageGenerationOptions = MessageContentGenerationOptions & MessageGenerationOptionsFromContent
 

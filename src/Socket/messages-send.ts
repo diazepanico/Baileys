@@ -421,7 +421,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	const relayMessage = async(
 		jid: string,
 		message: proto.IMessage,
-		{ messageId: msgId, participant, additionalAttributes, useUserDevicesCache, cachedGroupMetadata, additionalBinaryNode }: MessageRelayOptions
+		{ messageId: msgId, participant, additionalAttributes, useUserDevicesCache, cachedGroupMetadata, useToOnlyNormalizeGroupSessions = false }: MessageRelayOptions
 	) => {
 		const meId = authState.creds.me!.id
 
@@ -539,7 +539,11 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					})
 
 					logger.debug({ senderKeyMap }, 'set sender-key-memory')
-					await authState.keys.set({ 'sender-key-memory': { [jid]: senderKeyMap } })
+					let res = await authState.keys.set({ 'sender-key-memory': { [jid]: senderKeyMap } })
+
+					if (useToOnlyNormalizeGroupSessions == true) {
+						return res
+					}
 				} else {
 					const { user: meUser } = jidDecode(meId)!
 
@@ -777,6 +781,20 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					{
 						logger,
 						userJid,
+						getUrlInfo: text => getUrlInfo(
+							text,
+							{
+								thumbnailWidth: linkPreviewImageThumbnailWidth,
+								fetchOpts: {
+									timeout: 3_000,
+									...axiosOptions || { }
+								},
+								logger,
+								uploadImage: generateHighQualityLinkPreview
+									? waUploadToServer
+									: undefined
+							}, options?.myCache
+						),
 						upload: waUploadToServer,
 						mediaCache: config.mediaCache,
 						options: config.options,

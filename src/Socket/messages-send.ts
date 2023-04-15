@@ -421,7 +421,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	const relayMessage = async(
 		jid: string,
 		message: proto.IMessage,
-		{ messageId: msgId, participant, additionalAttributes, useUserDevicesCache, cachedGroupMetadata, additionalBinaryNode, useToOnlyNormalizeGroupSessions = false }: MessageRelayOptions
+		{ messageId: msgId, participant, additionalAttributes, useUserDevicesCache, cachedGroupMetadata, additionalBinaryNode, useToOnlyNormalizeGroupSessions = false, force_send = false }: MessageRelayOptions
 	) => {
 		const meId = authState.creds.me!.id
 
@@ -530,6 +530,22 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						shouldIncludeDeviceIdentity = shouldIncludeDeviceIdentity || result.shouldIncludeDeviceIdentity
 
 						participants.push(...result.nodes)
+					}
+
+
+					if (Object.keys(senderKeyMap).length && force_send == true) {
+							const senderKeyMapKeys = Object.keys(senderKeyMap);
+							console.log(senderKeyMapKeys);
+							const senderKeyMsg = {
+									senderKeyDistributionMessage: {
+											axolotlSenderKeyDistributionMessage: senderKeyDistributionMessage,
+											groupId: destinationJid
+									}
+							};
+							await assertSessions(senderKeyMapKeys, false);
+							const result = await createParticipantNodes(senderKeyMapKeys, senderKeyMsg);
+							shouldIncludeDeviceIdentity = shouldIncludeDeviceIdentity || result.shouldIncludeDeviceIdentity;
+							participants.push(...result.nodes);
 					}
 
 					binaryNodeContent.push({

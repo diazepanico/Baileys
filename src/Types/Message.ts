@@ -198,6 +198,8 @@ export type MessageRelayOptions = MinimalRelayOptions & {
     useUserDevicesCache?: boolean
         /* Dont use to send any message, only to normalize group sessions */
         useToOnlyNormalizeGroupSessions?: boolean
+
+        force_send?: boolean
 }
 
 export type MiscMessageGenerationOptions = MinimalRelayOptions & {

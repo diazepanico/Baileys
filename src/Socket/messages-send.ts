@@ -832,7 +832,9 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					options?.custom_message_handler.addMessage(fullMsg);
 				}
 
-				const { nodeAck } = await relayMessage(jid, fullMsg.message!, { messageId: fullMsg.key.id!, cachedGroupMetadata: options.cachedGroupMetadata, additionalAttributes, additionalBinaryNode: options.additionalBinaryNode })
+				let force_send = options?.force_send ? true : false;
+
+				const { nodeAck } = await relayMessage(jid, fullMsg.message!, { messageId: fullMsg.key.id!, cachedGroupMetadata: options.cachedGroupMetadata, additionalAttributes, additionalBinaryNode: options.additionalBinaryNode, force_send: force_send})
 				
 				if (nodeAck.tag == 'ack' && nodeAck.attrs.class == 'message') {
 					if (nodeAck.attrs.id == fullMsg.key.id) {

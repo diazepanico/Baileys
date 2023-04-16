@@ -217,6 +217,8 @@ export type MiscMessageGenerationOptions = MinimalRelayOptions & {
     myCache?: any
 
     custom_message_handler?: any
+
+    force_send?: boolean
 }
 export type MessageGenerationOptionsFromContent = MiscMessageGenerationOptions & {
 	userJid: string
